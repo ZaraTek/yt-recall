@@ -8,17 +8,21 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "../types";
-import { fetchMe } from "../api/client";
+import { ApiError, fetchMe } from "../api/client";
 
 const TOKEN_KEY = "yt_recall_token";
 
 export const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === "true";
 const DEV_TOKEN = "dev";
 
+const NOT_ALLOWED_MESSAGE =
+  "🔒 Sorry, your email has not been added to the allowlist. Email zara.tekmen@gmail.com if you want to be added!";
+
 interface AuthState {
   token: string | null;
   user: User | null;
   loading: boolean;
+  authError: string | null;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -31,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(!!token);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const logout = useCallback(() => {
     if (AUTH_DISABLED) return;
@@ -40,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback((newToken: string) => {
+    setAuthError(null);
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
   }, []);
@@ -56,8 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((me) => {
         if (!cancelled) setUser(me);
       })
-      .catch(() => {
-        if (!cancelled) logout();
+      .catch((err) => {
+        if (cancelled) return;
+        // A 403 means the account isn't on the allowlist; show a clear message
+        // instead of silently bouncing the user back to a plain login screen.
+        if (err instanceof ApiError && err.status === 403) {
+          setAuthError(NOT_ALLOWED_MESSAGE);
+        }
+        logout();
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -68,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token, logout]);
 
   const value = useMemo(
-    () => ({ token, user, loading, login, logout }),
-    [token, user, loading, login, logout],
+    () => ({ token, user, loading, authError, login, logout }),
+    [token, user, loading, authError, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

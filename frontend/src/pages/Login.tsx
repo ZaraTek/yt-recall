@@ -2,7 +2,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../auth/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, authError } = useAuth();
 
   return (
     <div className="center-screen">
@@ -35,6 +35,22 @@ export default function Login() {
             onError={() => alert("Google sign-in failed. Please try again.")}
           />
         </div>
+        {authError && (
+          <p
+            role="alert"
+            style={{
+              marginTop: 20,
+              padding: "12px 14px",
+              borderRadius: 10,
+              background: "rgba(220, 38, 38, 0.12)",
+              color: "#fca5a5",
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
+            {authError}
+          </p>
+        )}
       </div>
     </div>
   );
