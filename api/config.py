@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     mongodb_uri: str = ""
     mongodb_db: str = "yt_recall"
     cors_origins: str = "http://localhost:5173"
+    # Comma-separated allowlist of emails permitted to sign in. When empty,
+    # any Google account is allowed; when set, only these emails may use the
+    # app (keeps Gemini costs limited to you and your friends).
+    allowed_emails: str = ""
     # When true, skip Google token verification and use a fixed dev user.
     auth_disabled: bool = False
     # Optional proxy config to work around YouTube IP bans on transcript fetches.
@@ -28,6 +32,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def allowed_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.allowed_emails.split(",") if e.strip()}
 
 
 @lru_cache

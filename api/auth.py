@@ -73,10 +73,22 @@ async def get_current_user(authorization: str = Header(default="")) -> User:
             detail="Token missing subject",
         )
 
+    email = claims.get("email", "")
+
+    # Restrict access to an allowlist when one is configured. This is what keeps
+    # Gemini usage (and cost) limited to you and your friends rather than anyone
+    # with a Google account.
+    allowed = settings.allowed_email_set
+    if allowed and email.lower() not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is not allowed to use this app.",
+        )
+
     return await _upsert_user(
         google_sub,
-        claims.get("email", ""),
-        claims.get("name", claims.get("email", "")),
+        email,
+        claims.get("name", email),
         claims.get("picture"),
     )
 
